@@ -58,7 +58,9 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     install_requires=[
-        # eg: 'aspectlib==1.1.1', 'six>=1.7',
+        'psycopg2==2.6',
+        'green==1.9.2',
+        'codecov==1.1.8'
     ],
     extras_require={
         # eg: 'rst': ['docutils>=0.11'],
