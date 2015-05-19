@@ -30,7 +30,7 @@ setup(
     long_description=''
     author='Thordur Hermannsson',
     author_email='thordurguhe@gmail.com',
-    url='https://bitbucket.org/dv_devs/reshaper',
+    url='https://bitbucket.org/dv_dev/reshaper',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
