@@ -27,10 +27,10 @@ setup(
     version='0.1.0',
     license='BSD',
     description='A tool for converting database schemas while preserving data',
-    long_description='%s\n%s' % (read('README.rst'), re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))),
+    long_description=''
     author='Thordur Hermannsson',
     author_email='thordurguhe@gmail.com',
-    url='https://github.com/enkitosh/reshaper',
+    url='https://bitbucket.org/dv_devs/reshaper',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
