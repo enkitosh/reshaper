@@ -27,7 +27,7 @@ setup(
     version='0.1.0',
     license='BSD',
     description='A tool for converting database schemas while preserving data',
-    long_description=''
+    long_description='',
     author='Thordur Hermannsson',
     author_email='thordurguhe@gmail.com',
     url='https://bitbucket.org/dv_dev/reshaper',

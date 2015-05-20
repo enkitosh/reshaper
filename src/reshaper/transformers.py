@@ -2,28 +2,35 @@ class TransformerField:
     """
     TransformerField is used to map a field 
     from source to destination
-        - destination : The name of the destination column
-                        If not specified the column will
-                        keep the same name.
-        - filters : A list of functions that alter the original value
-        - actions : A list of functions to run after transformation
     """
     def __init__(self, destination=None, filters=[], actions=[]):
+        """
+        TransformerField constructor
+        :param str destination: Name of transformed column
+        :param list filters: A list of functions that alter the original value
+        :param list actions: A list of functions to run after transformation
+        """
         self.destination = destination
         self.filters = filters
         self.actions = actions
 
 class SubTransformerField:
     """
-    Transformerfield to specify a relation between two models
+    Specifies relation between two models
     This is for foreign keys. If a table has a foreign key
     A transformer must be constructed and passed in through this
     field. The transformer will then identify this is a foreign key,
     build the related object with its own transformer and return 
     the id of the newly built object
     """
-    def __init__(self, transformer):
+    def __init__(self, transformer, related_table=None):
+        """
+        SubTransformerField constructor
+        :param Transformer transformer: Transformer object
+        :param str related_table: Related table for foreign key / transform table
+        """
         self.transformer = transformer
+        self.related_table = related_table
 
 class TransformerMeta(type):
     """
@@ -45,44 +52,46 @@ class TransformerMeta(type):
             elif isintance(value, SubTransformerField):
                 transformer_relations[name] = value
             setattr(new_class, name, value)
+        # Check for Meta options
         if attr_meta:
             setattr(new_class, '_meta', attr_meta.__dict__)
+        # TransformerFields declared within Transformer instance
         if transformer_fields:
             setattr(new_class, '_fields', transformer_fields)
+        # SubTransformerFields declared within Transformer instance
         if transformer_relations:
             setattr(new_class, '_relations', transformer_relations)
         return new_class
 
 class Transformer(metaclass=TransformerMeta):
+    """
+    Transformer handles transforming original values
+    to new values depending on what is declared within their
+    TransformerFields. 
+    Transformers should include a Meta class with options
+        - source_table       = Name of source table in db
+        - destination_table  = Name of destination table in db
+    """
     def __init__(self, *args, **kwargs):
-        self.source = self._meta.get('source')
-        if not self.source:
-            raise Exception('Name of source db table must be specified')
-        self.destination = self._meta.get('destination', None)
-        self.conn = None
+        self.source_table = self._meta.get('source_table', None)
+        self.destination_table = self._meta.get('destination_table', None)
 
-    def build_single(self, id):
-        row = self.conn.get_row_from_pk(self.source, id)
-        values = self.run_transformations(row)
-        # Insert values get pk from db
-        # return pk
-        return 0
+    def run_transformations(self, row):
+        """
+        Run transformation for a single row from source db
 
-    def apply_filters(self, filters, values):
-        print("Applying filters")
-        for f in filters:
-            values = list(map(f, values))
-        return values
-
-    def run_transformations(self, row, fields):
+        :param dict row: Database row with values to transform
+        :return: Transformed row
+        :rtype: dict
+        """
         transformed = {}
         for column in row.keys():
-            transform_field = fields.get(column)
+            transform_field = self._fields.get(column)
             if not transform_field:
-                if column in self._relations:
-                    fk = self._relations.get(column)
-                    fk_object = fk.build_single(row.get(column))
-                transformed[fk_object.get('name')] = fk_object.get('pk')
+                # Check if this is a foreign key
+                if self._related.get(column):
+                    # If so we pass it the field itself
+                    transformed[column] = self._related.get(column)
                 else:
                     transformed[column] = row[column]
             else:
@@ -104,18 +113,3 @@ class Transformer(metaclass=TransformerMeta):
                     for action in transform_field.actions:
                         action(transformed[field_name])
         return transformed
-
-
-    def transform(self):
-        transformations = []
-        if not self._fields:
-            raise Exception('No transformer fields specified')
-        else:
-            rows = self.conn.get_table_rows(self.source)
-            for row in rows:
-                transformations.append(
-                    self.run_transformations(
-                        row, self._fields
-                    )
-                )
-        return transformations
