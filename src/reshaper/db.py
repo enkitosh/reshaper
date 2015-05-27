@@ -51,11 +51,31 @@ class DB:
         with self.cursor() as cur:
             try:
                 cur.execute(
-                    """ SELECT * FROM %s WHERE pk=%s """ % (table, pk)
+                    """ SELECT * FROM %s WHERE id=%s """ % (table, pk)
                 )
                 return cur.fetchone()
             except Exception:
-                raise Exception('Could not query pk: %s from table: %s' % (pk, table))
+                raise Exception('Could not query id: %s from table: %s' % (pk, table))
+    
+    def get_row_from_field(self, table, field_name, value):
+        """
+        Gets a row from table where field is equal to value.
+        This function will fail as soon as there are more then one value
+        that could match the value passed in. If fetching a single vaue
+        from a primary key use get_row_from_pk instead
+        """
+        with self.cursor() as cur:
+            try:
+                cur.execute(""" SELECT * FROM %s WHERE %s='%s'""" % (table, field_name, value))
+                return cur.fetchone()
+            except Exception:
+                raise Exception("get_row_from_field: query error")
+
+    def get_pk_from_field(self, table, field_name, value):
+        """
+        Return the primary key where field value matches
+        """
+        return self.get_row_from_field(table, field_name, value).get('pk')
 
     def build_single(self, table, values):
         """
@@ -69,7 +89,7 @@ class DB:
         stub_b = '('
         for key, value in values.items():
             stub_a += key + ','
-            stub_b += value + ','
+            stub_b += "'" + str(value) + "',"
         stub_a = stub_a[:-1] + ')'
         stub_b = stub_b[:-1] + ')'
         build  += stub_a
@@ -113,7 +133,7 @@ class DB:
         with self.cursor() as cur:
             try:
                 cur.execute(build)
-                return cur.fetchone()[0]
+                return cur.fetchone().get('id')
             except Exception:
                 raise Exception('Could not insert data')
 

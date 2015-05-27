@@ -4,10 +4,9 @@ class TransformerField:
     from source to destination
     """
     def __init__(self, destination=None, filters=[], actions=[]):
-        """
-        TransformerField constructor
-        :param str destination: Name of transformed column
-        :param list filters: A list of functions that alter the original value
+        """ TransformerField constructor 
+        :param str destination: Name of transformed column 
+        :param list filters: A list of functions that alter the original value 
         :param list actions: A list of functions to run after transformation
         """
         self.destination = destination
@@ -23,14 +22,24 @@ class SubTransformerField:
     build the related object with its own transformer and return 
     the id of the newly built object
     """
-    def __init__(self, transformer, related_table=None):
+    def __init__(
+            self, 
+            transformer, 
+            destination=None, 
+            relation_table=None, 
+            **options):
         """
         SubTransformerField constructor
         :param Transformer transformer: Transformer object
+        :param str destination: Name of destination column
+        :param bool insert: Field is being inserted into destination database (default: False)
         :param str related_table: Related table for foreign key / transform table
+        :param dict options: Options for SubTransformerField
         """
         self.transformer = transformer
-        self.related_table = related_table
+        self.destination = destination
+        self.relation_table = relation_table
+        self.options = options
 
 class TransformerMeta(type):
     """
@@ -49,7 +58,7 @@ class TransformerMeta(type):
         for name, value in attrs.items():
             if isinstance(value, TransformerField):
                 transformer_fields[name] = value
-            elif isintance(value, SubTransformerField):
+            elif isinstance(value, SubTransformerField):
                 transformer_relations[name] = value
             setattr(new_class, name, value)
         # Check for Meta options
@@ -85,13 +94,17 @@ class Transformer(metaclass=TransformerMeta):
         :rtype: dict
         """
         transformed = {}
+        row.pop('id', None)
         for column in row.keys():
             transform_field = self._fields.get(column)
             if not transform_field:
                 # Check if this is a foreign key
-                if self._related.get(column):
-                    # If so we pass it the field itself
-                    transformed[column] = self._related.get(column)
+                if self._relations.get(column):
+                    transformed[column] = {
+                        'subtransformer_field': self._relations.get(column),
+                        'key': column,
+                        'value' : row[column]
+                    }
                 else:
                     transformed[column] = row[column]
             else:
