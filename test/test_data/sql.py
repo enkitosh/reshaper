@@ -2,7 +2,10 @@ import psycopg2
 import os
 from src.reshaper.backends.postgresql import DB
 from dotenv import load_dotenv
-load_dotenv('.env')
+try:
+    load_dotenv('.env')
+except Exception:
+    pass
 
 class DBWrapper:
     """ 
