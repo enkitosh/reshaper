@@ -1,4 +1,4 @@
-reshaper
+reshaper [ ![Codeship Status for dv_dev/reshaper](https://codeship.com/projects/f1369680-df30-0132-9ebc-767a4e17443c/status?branch=master)](https://codeship.com/projects/80493) [![codecov.io](http://codecov.io/bitbucket/dv_dev/reshaper/coverage.svg?branch=master&token=MFw2iuSbb7)](http://codecov.io/bitbucket/dv_dev/reshaper?branch=master)
 ===============================
 
 A tool to transfer data from one database to another.
@@ -63,7 +63,10 @@ To achieve this we set related\_table in SubTransformerField constructor.
 
     class RelatedTransformer(Transformer):
         title = ...
-        foreign = SubTransformerField(ForeignTransformer, related_table='related_foreign_relation')
+        foreign = SubTransformerField(
+            ForeignTransformer, 
+            relation_table='related_foreign_relation'
+        )
 
 This way the ForeignTransformer is built and inserted into the database, then the RelatedTransformer is built and finally the primary key's of those two are added to 'related\_foreign\_relation' table. Column foreign is no longer part of the table that just got transformed and the relations between the two only exists in the relation table.
 

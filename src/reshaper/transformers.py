@@ -3,13 +3,13 @@ class TransformerField:
     TransformerField is used to map a field 
     from source to destination
     """
-    def __init__(self, destination=None, filters=[], actions=[]):
+    def __init__(self, destination_id=None, filters=[], actions=[]):
         """ TransformerField constructor 
-        :param str destination: Name of transformed column 
+        :param str destination_id: Name of transformed column 
         :param list filters: A list of functions that alter the original value 
         :param list actions: A list of functions to run after transformation
         """
-        self.destination = destination
+        self.destination_id = destination_id
         self.filters = filters
         self.actions = actions
 
@@ -25,21 +25,17 @@ class SubTransformerField:
     def __init__(
             self, 
             transformer, 
-            destination=None, 
-            relation_table=None, 
-            **options):
+            destination_id=None, 
+            relation_table=None):
         """
         SubTransformerField constructor
         :param Transformer transformer: Transformer object
-        :param str destination: Name of destination column
-        :param bool insert: Field is being inserted into destination database (default: False)
-        :param str related_table: Related table for foreign key / transform table
-        :param dict options: Options for SubTransformerField
+        :param str destination_id: Name of destination column
+        :param str relation_table: Related table for foreign key / transform table
         """
         self.transformer = transformer
-        self.destination = destination
+        self.destination_id = destination_id
         self.relation_table = relation_table
-        self.options = options
 
 class TransformerMeta(type):
     """
@@ -59,7 +55,10 @@ class TransformerMeta(type):
             if isinstance(value, TransformerField):
                 transformer_fields[name] = value
             elif isinstance(value, SubTransformerField):
-                transformer_relations[name] = value
+                column_name = name
+                if value.destination_id:
+                    column_name = value.destination_id
+                transformer_relations[column_name] = value
             setattr(new_class, name, value)
         # Check for Meta options
         if attr_meta:
@@ -78,12 +77,15 @@ class Transformer(metaclass=TransformerMeta):
     to new values depending on what is declared within their
     TransformerFields. 
     Transformers should include a Meta class with options
+        - destination_id     = Name of table if being 
+                               connected with a relation table
         - source_table       = Name of source table in db
         - destination_table  = Name of destination table in db
     """
     def __init__(self, *args, **kwargs):
         self.source_table = self._meta.get('source_table', None)
         self.destination_table = self._meta.get('destination_table', None)
+        self.destination_id = self._meta.get('destination_id', None)
 
     def run_transformations(self, row):
         """
@@ -110,8 +112,8 @@ class Transformer(metaclass=TransformerMeta):
             else:
                 # Check if name of destination column differs
                 field_name = column
-                if transform_field.destination:
-                    field_name = transform_field.destination
+                if transform_field.destination_id:
+                    field_name = transform_field.destination_id
                 transformed[field_name] = row[column]
 
                 # Check for filters and run them

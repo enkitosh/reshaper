@@ -3,7 +3,7 @@ class Manager:
         self.source_db = source_db
         self.destination_db = destination_db
         self.transformers = []
-        self.cache = {}
+        self.cache = []
 
     def add_transformer(self, transformer):
         self.transformers.append(transformer)
@@ -18,13 +18,14 @@ class Manager:
         new_row = transformer.run_transformations(row)
         pk = self.insert(transformer, new_row)
         if subtransformer_field.relation_table:
-            self.cache = {}
+            relations = {}
 
-            self.cache['relation_table'] = subtransformer_field.relation_table
+            relations['relation_table'] = subtransformer_field.relation_table
             column_name = key
-            if subtransformer_field.destination:
-                column_name = subtransformer_field.destination
-            self.cache[column_name] = pk
+            if subtransformer_field.destination_id:
+                column_name = subtransformer_field.destination_id
+            relations[column_name] = pk
+            self.cache.append(relations)
             return 0
         else:
             return pk
@@ -47,12 +48,6 @@ class Manager:
             transformer.destination_table, row
         )
 
-        if not len(self.cache) == 0:
-            self.cache[transformer.source_table + '_id'] = pk
-            self.destination_db.insert_single(
-                self.cache.pop('relation_table'), self.cache
-            )
-            self.cache = {}
         return pk
 
     def transform(self, transformer):
@@ -60,7 +55,15 @@ class Manager:
         rows = self.source_db.get_table_rows(source_table)
         for row in rows:
             transformed = transformer.run_transformations(row)
-            self.insert(transformer, transformed)
+            pk = self.insert(transformer, transformed)
+            if self.cache:
+                for relation in self.cache:
+                    table = relation.pop('relation_table')
+                    relation[transformer.destination_id] = pk
+                    self.destination_db.insert_single(
+                        table, relation
+                    )
+                self.cache = []
 
     def transformAll(self):
         for transformer in self.transformers:
