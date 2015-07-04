@@ -1,5 +1,6 @@
 import psycopg2
 import psycopg2.extras
+import re
 
 class DB:
     """
@@ -11,6 +12,7 @@ class DB:
             self.conn = psycopg2.connect(
                 "dbname='%s' user='%s' password='%s'" % (dbName, dbUser, dbPass)
             )
+            self.conn.autocommit = True
         except:
             raise Exception(
                 'Cannot connect to database: %s , user: %s, password: %s' % (dbName, dbUser, dbPass)
@@ -88,8 +90,14 @@ class DB:
         stub_a = '('
         stub_b = '('
         for key, value in values.items():
-            stub_a += key + ','
-            stub_b += "'" + str(value) + "',"
+            if value:
+                if isinstance(value, str):
+                    if "'" in value:
+                        value = value.replace("'", "´")
+                else:
+                    value = str(value)
+                stub_a += key + ','
+                stub_b += "'"+ value + "',"
         stub_a = stub_a[:-1] + ')'
         stub_b = stub_b[:-1] + ')'
         build  += stub_a
@@ -133,9 +141,10 @@ class DB:
         with self.cursor() as cur:
             try:
                 cur.execute(build)
-                return cur.fetchone().get('id')
+                pk = cur.fetchone().get('id')
+                return pk
             except Exception:
-                raise Exception('Could not insert data')
+                raise Exception('Could not insert data %s' % build )
 
     def insert_many(self, table, rows):
         """

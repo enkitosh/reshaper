@@ -1,41 +1,148 @@
-class TransformerField:
+class Field:   
+    def __init__(
+        self, 
+        destination_id=None, 
+        filters=[],
+        actions=[],
+        create=True):
+        """
+        All fields have:
+        :param str destination_id: The name of the db column after its value has been transformed
+        :param list filter: List of functions to run on the value being transformed
+        :param list actions: List of functions to run on the value being transformed without altering that value
+        """
+        self.destination_id = destination_id
+        self.filters = filters
+        self.actions = actions
+        self.create = create
+
+    def get_type(self):
+        return self.__class__.__name__.lower()
+
+    def transform(self, data):
+        cname = data.get('key')
+        if self.destination_id:
+            cname = self.destination_id
+        value = data.get('value')
+        if self.filters:
+            for filter in self.filters:
+                value = filter(value)
+        if self.actions:
+            for action in self.actions:
+                action(value)
+
+        return {
+            'key': cname,
+            'value': value
+        }
+
+
+class TransformerField(Field):
     """
     TransformerField is used to map a field 
     from source to destination
     """
-    def __init__(self, destination_id=None, filters=[], actions=[]):
+    def __init__(
+        self, 
+        destination_id=None, 
+        filters=[], 
+        actions=[],
+        create=True
+    ):
         """ TransformerField constructor 
         :param str destination_id: Name of transformed column 
         :param list filters: A list of functions that alter the original value 
         :param list actions: A list of functions to run after transformation
         """
-        self.destination_id = destination_id
-        self.filters = filters
-        self.actions = actions
+        super(TransformerField, self).__init__(
+            destination_id=destination_id,
+            filters=filters,
+            actions=actions,
+            create=create
+        )
 
-class SubTransformerField:
-    """
-    Specifies relation between two models
-    This is for foreign keys. If a table has a foreign key
-    A transformer must be constructed and passed in through this
-    field. The transformer will then identify this is a foreign key,
-    build the related object with its own transformer and return 
-    the id of the newly built object
-    """
+class RelationTransformerField(Field):
+    def __init__(
+        self, 
+        transformer=None, 
+        relation_table=None,
+        destination_id=None, 
+        filters=[], 
+        actions=[],
+        create=True
+    ):
+        """
+        Specifies relation between two models in a destination table
+        :param Transformer transformer: Transformer object
+        :param str relation_table: Name of destination table
+        :param str destination_id: Name of destination column
+        :param list filters: A list of functions that alter the original value 
+        :param list actions: A list of functions to run after transformation
+        """
+        super(RelationTransformerField, self).__init__(
+            destination_id=destination_id,
+            filters=filters,
+            actions=actions,
+            create=create
+        )
+        self.transformer = transformer
+        self.relation_table = relation_table
+
+class SubTransformerField(Field):
     def __init__(
             self, 
-            transformer, 
+            transformer=None,
+            fk_table=None,
+            source_table=None,
             destination_id=None, 
-            relation_table=None):
+            filters=[],
+            actions=[],
+            create=True
+        ):
+
         """
-        SubTransformerField constructor
-        :param Transformer transformer: Transformer object
+        Field used to preserve foreign key relations
+        when an object relies on a foreign key being 
+        translated from source database to destination database.
+        SubTransformerField can take a transformer as argument.
+        If no transformer is passed the value of the source_db
+        column is used as a lookup in fk_table.
+        That is, if no transformer is passed in foreign keys
+        are expected to be identical from source database
+        to destination database even if their table names vary.
+        
+        :param Transformer transformer: Transformer object(optional)
+        :param str fk_table: Table where foreign key is stored
         :param str destination_id: Name of destination column
-        :param str relation_table: Related table for foreign key / transform table
+        :param list filters: A list of functions that alter the original value 
+        :param list actions: A list of functions to run after transformation
+
         """
-        self.transformer = transformer
-        self.destination_id = destination_id
-        self.relation_table = relation_table
+        super(SubTransformerField, self).__init__(
+            destination_id=destination_id,
+            filters=filters,
+            actions=actions,
+            create=create
+        )
+        self.transformer=transformer
+        self.fk_table = fk_table
+        self.source_table = source_table
+
+class ValueField(Field):
+    def __init__(
+        self, 
+        value, 
+        destination_id=None, 
+        filters=[],
+        actions=[],
+        create=True):
+        super(ValueField, self).__init__(
+            destination_id = destination_id,
+            filters=filters,
+            actions=actions,
+            create=create
+        )
+        self.value = value
 
 class TransformerMeta(type):
     """
@@ -50,15 +157,12 @@ class TransformerMeta(type):
         attr_meta = attrs.pop('Meta', None)
 
         transformer_fields = {}
-        transformer_relations = {}
         for name, value in attrs.items():
-            if isinstance(value, TransformerField):
+            if isinstance(value, TransformerField)\
+            or isinstance(value, RelationTransformerField)\
+            or isinstance(value, SubTransformerField)\
+            or isinstance(value, ValueField):
                 transformer_fields[name] = value
-            elif isinstance(value, SubTransformerField):
-                column_name = name
-                if value.destination_id:
-                    column_name = value.destination_id
-                transformer_relations[column_name] = value
             setattr(new_class, name, value)
         # Check for Meta options
         if attr_meta:
@@ -66,17 +170,14 @@ class TransformerMeta(type):
         # TransformerFields declared within Transformer instance
         if transformer_fields:
             setattr(new_class, '_fields', transformer_fields)
-        # SubTransformerFields declared within Transformer instance
-        if transformer_relations:
-            setattr(new_class, '_relations', transformer_relations)
         return new_class
+
 
 class Transformer(metaclass=TransformerMeta):
     """
     Transformer handles transforming original values
     to new values depending on what is declared within their
     TransformerFields. 
-    Transformers should include a Meta class with options
         - destination_id     = Name of table if being 
                                connected with a relation table
         - source_table       = Name of source table in db
@@ -86,8 +187,9 @@ class Transformer(metaclass=TransformerMeta):
         self.source_table = self._meta.get('source_table', None)
         self.destination_table = self._meta.get('destination_table', None)
         self.destination_id = self._meta.get('destination_id', None)
+        self.unique = self._meta.get('unique', None)
 
-    def run_transformations(self, row):
+    def run_transformations(self, data):
         """
         Run transformation for a single row from source db
 
@@ -95,36 +197,21 @@ class Transformer(metaclass=TransformerMeta):
         :return: Transformed row
         :rtype: dict
         """
-        transformed = {}
-        row.pop('id', None)
-        for column in row.keys():
-            transform_field = self._fields.get(column)
-            if not transform_field:
-                # Check if this is a foreign key
-                if self._relations.get(column):
-                    transformed[column] = {
-                        'subtransformer_field': self._relations.get(column),
-                        'key': column,
-                        'value' : row[column]
-                    }
-                else:
-                    transformed[column] = row[column]
+        transformed = {} 
+        for key in self._fields.keys():
+            value = ''
+            transform_field = self._fields[key]
+            if key in data.keys():
+                value = data[key]
             else:
-                # Check if name of destination column differs
-                field_name = column
-                if transform_field.destination_id:
-                    field_name = transform_field.destination_id
-                transformed[field_name] = row[column]
+                if transform_field.get_type() == 'valuefield':
+                    value = self._fields[key].value
 
-                # Check for filters and run them
-                if transform_field.filters:
-                    for filter in transform_field.filters:
-                        transformed[field_name] = filter(
-                            transformed[field_name]
-                        )
-
-                # Check for actions and run them
-                if transform_field.actions:
-                    for action in transform_field.actions:
-                        action(transformed[field_name])
+            transformed[key] = {
+                'field' : transform_field,
+                'data': transform_field.transform({
+                    'key': key,
+                    'value': value
+                })
+            }
         return transformed

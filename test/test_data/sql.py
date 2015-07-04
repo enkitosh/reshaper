@@ -96,6 +96,21 @@ class DBWrapper:
             )
             """
         )
+        cur.execute(
+            """ CREATE TABLE country(
+                id       serial PRIMARY KEY,
+                name     varchar(100)
+            )
+            """
+        )
+        cur.execute(
+            """ CREATE TABLE director(
+                id         serial PRIMARY KEY,
+                name       varchar(100),
+                country_id integer REFERENCES country
+            )
+            """
+        )
 
         cur = self.destination_db().cursor()
         cur.execute(
@@ -119,6 +134,21 @@ class DBWrapper:
                 id    serial PRIMARY KEY,
                 movie_id integer REFERENCES new_movie,
                 author_id integer REFERENCES new_author
+            )
+            """
+        )
+        cur.execute(
+            """ CREATE TABLE new_country(
+                id       serial PRIMARY KEY,
+                name     varchar(100)
+            )
+            """
+        )
+        cur.execute(
+            """ CREATE TABLE new_director(
+                id         serial PRIMARY KEY,
+                name       varchar(100),
+                country_id integer REFERENCES new_country
             )
             """
         )
