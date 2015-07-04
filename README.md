@@ -1,7 +1,7 @@
 reshaper 
+===============================
 
 [ ![Codeship Status for dv_dev/reshaper](https://codeship.com/projects/f1369680-df30-0132-9ebc-767a4e17443c/status?branch=master)](https://codeship.com/projects/80493) [![codecov.io](http://codecov.io/bitbucket/dv_dev/reshaper/coverage.svg?branch=master&token=MFw2iuSbb7)](http://codecov.io/bitbucket/dv_dev/reshaper?branch=master)
-===============================
 
 A tool to transfer data from one database to another.
 The transformation of data is done with Transformers.
@@ -38,8 +38,7 @@ Example
         name = TransformerField()
         profile_id = SubTransformerField(
             ProfileTransformer,
-            destination_id='pid',
-            fk_table
+            destination_id='pid'
         )
 
 By default all fields have the optional argument create=True.
@@ -71,7 +70,7 @@ If no unique field is provided the manager will just use the same primary key as
 Relations
 ---------
 
-RelationTransformerFields work similar to SubTransformerFields but there is a fundemental difference in the two. You use SubTransformerField when you want to keep the same foreign key in the table from source to destination but RelationTransformerField when you want to make a connection between two or more objects in a relation table. 
+RelationTransformerFields work similar to SubTransformerFields but there is a fundamental difference between the two. You use SubTransformerField when you want to keep the same foreign key in the table from source to destination but RelationTransformerField when you want to make a connection between two or more objects in a relation table. 
 
 Let's say I have a User table, and in my old database users relation to their profile was stored as a foreign key but now I want users to be able to have multiple profiles, so I want to make a relation table
 
@@ -83,10 +82,14 @@ Let's say I have a User table, and in my old database users relation to their pr
     The transformer
 
     class User(Transformer):
-        profile = RelationTransformerField(
+        profile_id = RelationTransformerField(
             transformer=ProfileTransformer,
             relation_table='user_profile'
         )
+
+        class Meta:
+            # To specify name of the transformer itself in relation table
+            destination_id = 'user_id
 
 Like noted above the transformer will create the profile in the destination database if created is not altered. So it will create this profile, return the new pk but not insert it but put this connection in a storage resolved after the user object has been inserted into the database. After that has happened the manager checks if the user object has any relations in storage, if so it inserts the new user primary key and the relation primary key into the destination table specified in "relation\_table"
             
