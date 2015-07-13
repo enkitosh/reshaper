@@ -1,10 +1,11 @@
 from progressbar import ProgressBar, Bar, Percentage
+from .transformers import *
 
 class Manager:
     def __init__(self, source_db=None, destination_db=None):
         self.source_db = source_db
         self.destination_db = destination_db
-        self.transformers = []
+        self.transformers = [] 
         self.cache = []
         self.stats = False
         self.mwidgets = [Bar('=','[',']'),' ',Percentage()]
@@ -21,120 +22,102 @@ class Manager:
             table, unique, value
         )
 
-    def resolve_relationtransformerfield(self, field, values):
+    def add_relation(self, table, data):
+        """
+        Adds relation data to table cache
+        """
+        self.cache.append({table:data})
+
+    def resolve_relationtransformerfield(self, field, value, transformers):
         """
         Resolve a RelationTransformerField
         """
-        new_row = []
-        transformer = field.transformer()
-        relations = {}
-        relation_table = None
-        if field.relation_table:
-            relation_table = field.relation_table
+        
+        if type(transformers) is not list:
+            transformers = [transformers]
+
+        for transformer in transformers:
+            if transformer.source_table:
+                row = self.source_db.get_row_from_pk(
+                    transformer.source_table,
+                    value
+                )
+                transformer.set_values(row)
+            data = self.insert(transformer)
+            if transformer.commit:
+                self.add_relation(
+                    field.relation_table,
+                    {transformer.destination_id: data.get('id')}
+                )
+            else:
+                self.add_relation(field.relation_table, data)
+        return 0
+
+    def resolve_subtransformerfield(self, field, value, transformer):
+        """
+        Resolve SubTransformerField (foreign keys)
+        """
+        pk = 0
 
         if transformer.source_table:
             row = self.source_db.get_row_from_pk(
-                transformer.source_table, values.get('value')
+                transformer.source_table,
+                value
             )
-            new_row = transformer.run_transformations(row)
-            if field.create:
-                pk = self.insert(transformer, new_row)
-            else:
-                # check if transformer has a unique
-                if transformer.unique:
-                    value = row.get(transformer.unique)
-                    gfu = self.get_from_unique(
-                        transformer.source_table,
-                        transfomer.unique,
-                        value,
-                        db='destination_db'
-                    )
-                    pk = gfu.get('id')
-                else:
-                    pk = row.get('id')
-
-            column_name = values.get('key')
-            relations[relation_table]= [{column_name : pk}]
         else:
-            new_row = field.transform(values)
-            if field.relation_table:
-                relation_table = field.relation_table
-                relations[relation_table] = new_row
-
-        self.cache.append(relations)
-        return 0
-
-    def resolve_subtransformerfield(self, field, values):
-        """
-        Resolve SubTransformerField (foreign keys)
-        If a transformer is passed to SubTransformer
-        that transformer is resolved recursively 
-        until we receive the id of the transformed
-        and created foreign key
-        """
-        pk = 0
-        db = self.source_db if field.transformer\
-                            else self.destination_db
-        if values.get('value') and field.source_table:
-            row = db.get_row_from_pk(
-                field.source_table, values.get('value')
-            )
-            id = row.pop('id')
-            if field.transformer:
-                transformer = field.transformer()
-                transformed_r = transformer.run_transformations(row)
-                if field.create:
-                    pk = self.insert(transformer, transformed_r)
-                else:
-                    if transformer.unique:
-                        value = row.get(transformer.unique)
-                        gfu = self.get_from_unique(
-                            field.fk_table,
-                            transformer.unique,
-                            value,
-                            db='destination_db'
-                        )
-                        pk = gfu.get('id')
-            else:
-                pk = id
+            row = transformer.to_dict()
+        if not field.create:
+            if transformer.unique:
+                unique_value = row.get(transformer.unique)
+                dest_row = self.get_from_unique(
+                    transformer.destination_table,
+                    transformer.unique,
+                    unique_value,
+                    db='destination_db'
+                )
+                pk = dest_row.get('id')
         else:
-            pk = values.get('value')
+            transformer.set_values(row)
+            pk = self.insert(transformer).get('id')
         return pk
 
-    def insert(self, transformer, row):
+    def insert(self, transformer):
         """
         Insert a single row from resolved transformer data
 
         :param Transformer transformer: Transformer object
         :param dict row: Transformed data
+
+        :return: A dictionary containing id: primary_key if data was commited, otherwise a dictionary containing transformed columns
         """
         pk = None
         transformed = {}
-        for key, value in row.items():
-            data = value.get('data')
-            field = value.get('field')
-            
-            if field.get_type() == 'relationtransformerfield':
-                pk = self.resolve_relationtransformerfield(
-                    field,
-                    data
+        for key, value in transformer.to_dict().items():
+            field = transformer.to_field(key)
+            if field:
+                if isinstance(field, RelationTransformerField):
+                    pk = self.resolve_relationtransformerfield(
+                        field,
+                        value,
+                        field.transform(transformer)
+                    )
+                elif isinstance(field, SubTransformerField):
+                    pk = self.resolve_subtransformerfield(
+                        field,
+                        value,
+                        field.transform(transformer)
+                    )
+                    transformed[key] = pk
+                elif isinstance(field, TransformerField):
+                    transformed[key] = value
+        if transformer.commit:
+            if pk != 0:
+                pk = self.destination_db.insert_single(
+                    transformer.destination_table, transformed
                 )
-
-            elif field.get_type() == 'subtransformerfield':
-                pk = self.resolve_subtransformerfield(
-                    field,
-                    data
-                )
-                transformed[data.get('key')] = pk
-
-            elif field.get_type() == 'transformerfield'\
-            or   field.get_type() == 'valuefield':
-                transformed[data.get('key')] = data.get('value')
-
-        pk = self.destination_db.insert_single(
-            transformer.destination_table, transformed
-        )
-        return pk
+                return pk
+        else:
+            return transformed
 
     def transform(self, transformer):
         """
@@ -156,17 +139,16 @@ class Manager:
             ))
         for row in rows:
             row.pop('id')
-            transformed = transformer.run_transformations(row)
-            pk = self.insert(transformer, transformed)
+            transformer.set_values(row)
+            pk = self.insert(transformer)
             if self.cache:
                 for relation in self.cache:
                     for key,value in relation.items():
                         table = key
-                        for v in value:
-                            v[transformer.destination_id] = pk
-                            self.destination_db.insert_single(
-                                table, v
-                            )
+                        value[transformer.destination_id] = pk
+                        self.destination_db.insert_single(
+                            table, value
+                        )
                 self.cache = []
             if self.stats:
                 count += 1

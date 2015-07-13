@@ -134,14 +134,14 @@ class DB:
 
         :param str table: Name of db table to insert values into
         :param dict row: Dictionary containing values to insert
-        :return: pk of the row inserted
+        :return: pk of the row inserted as {id : pk}
         """
         build  = self.build_single(table, row)
         build += ' RETURNING id'
         with self.cursor() as cur:
             try:
                 cur.execute(build)
-                pk = cur.fetchone().get('id')
+                pk = cur.fetchone()
                 return pk
             except Exception:
                 raise Exception('Could not insert data %s' % build )

@@ -112,6 +112,15 @@ class DBWrapper:
             """
         )
 
+        cur.execute(
+            """ CREATE TABLE old_fruits(
+                id       serial PRIMARY KEY,
+                fruit    varchar(100),
+                owner    varchar(100)
+            )
+            """
+        )
+
         cur = self.destination_db().cursor()
         cur.execute(
             """ CREATE TABLE new_author(
@@ -149,6 +158,24 @@ class DBWrapper:
                 id         serial PRIMARY KEY,
                 name       varchar(100),
                 country_id integer REFERENCES new_country
+            )
+            """
+        )
+
+        cur.execute(
+            """ CREATE TABLE fruit_owner(
+                id        serial PRIMARY KEY,
+                name      varchar(100),
+                age       integer
+            )
+            """
+        )
+
+        cur.execute(
+            """ CREATE TABLE new_fruits(
+                id         serial PRIMARY KEY,
+                fruit      varchar(100),
+                owner_id   integer REFERENCES fruit_owner
             )
             """
         )
