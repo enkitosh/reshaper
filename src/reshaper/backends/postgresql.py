@@ -25,6 +25,18 @@ class DB:
         else:
             raise Exception('Connection to database not established')
 
+    def get_table_row_count(self, table):
+        with self.cursor() as cur:
+            try:
+                cur.execute(
+                    """ SELECT COUNT(*) FROM %s """ % table
+                )
+                return cur.fetchone().get('count')
+            except Exception as e:
+                raise e
+
+
+
     def get_table_rows(self, table):
         """
         Get all rows of a table in database
@@ -37,9 +49,7 @@ class DB:
                 cur.execute(
                     """ SELECT * FROM %s """ % table
                 )
-                for row in cur:
-                    rows.append(row)
-                return rows
+                return cur
             except Exception:
                 raise Exception('Query for table %s failed' % table)
 

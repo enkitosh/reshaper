@@ -34,11 +34,13 @@ class TransformerField(Field):
     def __init__(
         self, 
         source=None,
+        commit=True,
         filters=[], 
         actions=[]
     ):
         """ TransformerField constructor 
         :param str source: Name of source column
+        :param bool commit: If false the value will not be inserted into destination table, but preserved while the transformer object is being built
         :param list filters: A list of functions that alter the original value 
         :param list actions: A list of functions to run after transformation
         """
@@ -47,6 +49,7 @@ class TransformerField(Field):
             filters=filters,
             actions=actions
         )
+        self.commit = commit
 
 class RelationTransformerField(Field):
     def __init__(

@@ -1,4 +1,4 @@
-from progressbar import ProgressBar, Bar, Percentage
+from progressbar import ProgressBar, Bar, Percentage, RotatingMarker, FileTransferSpeed, ETA, Counter
 from .transformers import *
 
 class Manager:
@@ -8,7 +8,12 @@ class Manager:
         self.transformers = [] 
         self.cache = []
         self.stats = False
-        self.mwidgets = [Bar('=','[',']'),' ',Percentage()]
+        self.mwidgets = [
+            Percentage(), ' ', 
+            Bar(marker=RotatingMarker()),' ',
+            Counter(), ' ',
+            ETA(), ' ', 
+        ]
 
     def add_transformer(self, transformer):
         self.transformers.append(transformer)
@@ -76,6 +81,8 @@ class Manager:
                     db='destination_db'
                 )
                 pk = dest_row.get('id')
+            else:
+                pk = value
         else:
             transformer.set_values(row)
             pk = self.insert(transformer).get('id')
@@ -109,13 +116,16 @@ class Manager:
                     )
                     transformed[key] = pk
                 elif isinstance(field, TransformerField):
-                    transformed[key] = value
+                    if field.commit:
+                        # TODO: Fix 
+                        transformed[key] = value if value else ""
+                elif isinstance(field, ValueField):
+                    transformed[key] = field.value
         if transformer.commit:
-            if pk != 0:
-                pk = self.destination_db.insert_single(
-                    transformer.destination_table, transformed
-                )
-                return pk
+            pk = self.destination_db.insert_single(
+                transformer.destination_table, transformed
+            )
+            return pk
         else:
             return transformed
 
@@ -128,19 +138,23 @@ class Manager:
         """
         count = 0
         source_table = transformer.source_table
-        rows = self.source_db.get_table_rows(source_table)
+        rlen = self.source_db.get_table_row_count(source_table)
         if self.stats:
             pbar = ProgressBar(
                 widgets=self.mwidgets, 
-                maxval=len(rows)
+                maxval=rlen
             ).start()
             print("%s - Transforming %i objects" % (
-                transformer.__class__.__name__,len(rows)
+                transformer.__class__.__name__,rlen
             ))
-        for row in rows:
-            row.pop('id')
+        rows = self.source_db.get_table_rows(source_table)
+        cur = self.source_db.cursor()
+        cur.execute(
+            """ SELECT * FROM %s """  % source_table
+        )
+        for row in cur:
             transformer.set_values(row)
-            pk = self.insert(transformer)
+            pk = self.insert(transformer).get('id')
             if self.cache:
                 for relation in self.cache:
                     for key,value in relation.items():
@@ -153,7 +167,6 @@ class Manager:
             if self.stats:
                 count += 1
                 pbar.update(count)
-
         if self.stats:
             pbar.finish()
 
