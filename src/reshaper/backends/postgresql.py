@@ -7,10 +7,10 @@ class DB:
     psycopg2 client
 
     """
-    def __init__(self, dbName=None, dbUser=None, dbPass=None):
+    def __init__(self, dbName=None, dbUser=None, dbPass=None, host="localhost"):
         try:
             self.conn = psycopg2.connect(
-                "dbname='%s' user='%s' password='%s'" % (dbName, dbUser, dbPass)
+                "dbname='%s' user='%s' password='%s' host='%s'" % (dbName, dbUser, dbPass, host)
             )
             self.conn.autocommit = True
         except:
