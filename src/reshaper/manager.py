@@ -48,7 +48,23 @@ class Manager:
                     value
                 )
                 transformer.set_values(row)
-            data = self.insert(transformer)
+
+            if transformer.method == 'get_or_create':
+                if transformer.unique:
+                    unique_value = row.get(transformer.unique)
+                    dest_row = self.get_from_unique(
+                        transformer.destination_table,
+                        transformer.unique,
+                        unique_value,
+                        db='destination_db'
+                    )
+                    if not dest_row:
+                        data = self.insert(transformer)
+                    else:
+                        data = dest_row
+            else:
+                data = self.insert(transformer)
+
             if transformer.commit:
                 self.add_relation(
                     field.relation_table,

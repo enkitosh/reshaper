@@ -179,6 +179,7 @@ class Transformer(metaclass=TransformerMeta):
             self.destination_id = self._meta.get('destination_id', None)
             self.unique = self._meta.get('unique', None)
             self.commit = self._meta.get('commit', True)
+            self.method = self._meta.get('method', None)
 
     def to_dict(self):
         """
