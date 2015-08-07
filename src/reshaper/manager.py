@@ -37,6 +37,8 @@ class Manager:
         """
         Resolve a RelationTransformerField
         """
+        if not value:
+            return None
         
         if type(transformers) is not list:
             transformers = [transformers]
@@ -80,7 +82,10 @@ class Manager:
         """
         pk = 0
 
-        if transformer.source_table:
+        if not value:
+            return None
+
+        if transformer.source_table and not field.build:
             row = self.source_db.get_row_from_pk(
                 transformer.source_table,
                 value

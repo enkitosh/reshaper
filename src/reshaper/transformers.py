@@ -5,6 +5,7 @@ class Field:
         transformer=None,
         filters=[],
         actions=[],
+        build=False,
         create=True):
         """
         All fields have:
@@ -18,6 +19,7 @@ class Field:
         self.transformer = transformer
         self.filters = filters
         self.actions = actions
+        self.build = build
         self.create = create
 
     def transform(self, transformer):
@@ -59,6 +61,7 @@ class RelationTransformerField(Field):
         relation_table=None,
         filters=[], 
         actions=[],
+        build=False,
         create=True
     ):
         """
@@ -75,6 +78,7 @@ class RelationTransformerField(Field):
             transformer=transformer,
             filters=filters,
             actions=actions,
+            build=build,
             create=create
         )
         self.relation_table = relation_table
