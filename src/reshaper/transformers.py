@@ -1,85 +1,95 @@
 class Field:   
     def __init__(
         self, 
-        source,
+        source=None,
+        commit=True,
         transformer=None,
         filters=[],
-        actions=[],
-        build=False,
-        create=True):
+        actions=[]
+    ):
         """
         All fields have:
         :param str source: Name of column as it appears in source_database
+        :param boolean commit: Indicates if the field being transformed should be inserted into destination db or only built
         :param Transformer transformer: Transformer being used to transform source to destination
         :param list filter: List of functions to run on the value being transformed
         :param list actions: List of functions to run on the value being transformed without altering that value
-        :param bool create: Indicates if the row being related to should be created or if it is already in database,
         """
         self.source = source
         self.transformer = transformer
         self.filters = filters
         self.actions = actions
-        self.build = build
-        self.create = create
+        self.commit = commit
 
     def transform(self, transformer):
         return self.transformer()
+    
+    def apply_filters(self, value, n=0):
+        """
+        Applies field filters to value.
+        Filters are applied in the same order
+        they are passed in.
+
+        :param str value: Field value
+        """
+        if not self.filters:
+            return
+
+        val = self.filters[n](value)
+        if len(self.filters)-1 == n:
+            return val
+        else:
+            n += 1
+            return self.apply_filters(val, n)
+    
+    def run_actions(self, value):
+        """
+        Runs actions on a field.
+        Actions do not alter the value of a field
+        they simply run with value as argument
+
+        :param str value: Value from field in source db
+        """
+        if field.actions:
+            for action in field.actions:
+                action(value)
 
 class TransformerField(Field):
     """
     TransformerField is used to map a field 
     from source to destination.
-    TransformerField does really transform anything
+    TransformerField does not really transform anything
     It simply carries the value from source database
     to the destination database.
     """
-    def __init__(
-        self, 
-        source=None,
-        commit=True,
-        filters=[], 
-        actions=[]
-    ):
-        """ TransformerField constructor 
-        :param str source: Name of source column
-        :param bool commit: If false the value will not be inserted into destination table, but preserved while the transformer object is being built
-        :param list filters: A list of functions that alter the original value 
-        :param list actions: A list of functions to run after transformation
-        """
-        super(TransformerField, self).__init__(
-            source=source,
-            filters=filters,
-            actions=actions
-        )
-        self.commit = commit
+    pass
 
 class RelationTransformerField(Field):
     def __init__(
         self, 
         source,
+        commit=True,
         transformer=None, 
         relation_table=None,
         filters=[], 
-        actions=[],
-        build=False,
-        create=True
+        actions=[]
     ):
         """
         Specifies relation between two models in a destination table
+
+        :param str source: Name of column as it appears in source_database
+        :param boolean commit: Indicates if the field being transformed should be inserted into destination db or only built
         :param Transformer transformer: Transformer object
         :param str relation_table: Name of destination table
-        :param str destination_id: Name of destination column
         :param list filters: A list of functions that alter the original value 
         :param list actions: A list of functions to run after transformation
-        :param bool create: Indicates if the row being related to should be created or if it is already in database,
         """
         super(RelationTransformerField, self).__init__(
             source,
+            commit=commit,
             transformer=transformer,
             filters=filters,
-            actions=actions,
-            build=build,
-            create=create
+            actions=actions
         )
         self.relation_table = relation_table
 
@@ -90,16 +100,10 @@ class SubTransformerField(Field):
         translated from source database to destination database.
         SubTransformerField can take a transformer as argument.
         If no transformer is passed the value of the source_db
-        column is used as a lookup in fk_table.
+        is simply passed to the destination database.
         That is, if no transformer is passed in foreign keys
         are expected to be identical from source database
         to destination database even if their table names vary.
-        
-        :param Transformer transformer: Transformer object(optional)
-        :param str destination_id: Name of destination column
-        :param list filters: A list of functions that alter the original value 
-        :param list actions: A list of functions to run after transformation
-
         """
         pass
 
@@ -171,18 +175,31 @@ class Transformer(metaclass=TransformerMeta):
     Transformer handles transforming original values
     to new values depending on what is declared within their
     TransformerFields. 
-        - destination_id     = Name of table if being 
-                               connected with a relation table
-        - source_table       = Name of source table in db
-        - destination_table  = Name of destination table in db
     """
     def __init__(self, *args, **kwargs):
+
         if hasattr(self, '_meta'):
-            self.source_table = self._meta.get('source_table', None)
-            self.destination_table = self._meta.get('destination_table', None)
+
+            # Name of source table in source db
+            self.source_table = self._meta.get(
+                'source_table', None
+            )
+            # Name of destination table in destination db
+            self.destination_table = self._meta.get(
+                'destination_table', 
+                None
+            )
+            # Name in destination db if the transformer itself is being added (in a relation table or in as a foreign key)
             self.destination_id = self._meta.get('destination_id', None)
+            # Unique identifier in source db
             self.unique = self._meta.get('unique', None)
+
+            # Insert transformed row into destination db
+            # If this is false then the transformed row
+            # is returned
             self.commit = self._meta.get('commit', True)
+
+            # method: only get_or_create at the moment
             self.method = self._meta.get('method', None)
 
     def to_dict(self):
@@ -202,18 +219,6 @@ class Transformer(metaclass=TransformerMeta):
         :param str key: Key to lookup
         """
         return self._fields.get(key)
-
-    def apply_filters(self, field, value):
-        val = value
-        if field.filters:
-            for filter in field.filters:
-                val = filter(value)
-        return val
-
-    def apply_actions(self, field, value):
-        if field.actions:
-            for action in field.actions:
-                action(value)
             
     def set_values(self, data):
         """
@@ -225,6 +230,9 @@ class Transformer(metaclass=TransformerMeta):
             if key in self._source.keys():
                 for field in self._source[key]:
                     field_instance = field.get('field')
-                    val = self.apply_filters(field_instance, value)
-                    self.apply_actions(field_instance, value)
+                    val = value
+                    if field_instance.filters:
+                        val = field_instance.apply_filters(value)
+                    if field_instance.actions:
+                        field_instance.run_actions(value)
                     setattr(self, field.get('name'), val)

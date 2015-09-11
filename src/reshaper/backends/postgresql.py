@@ -25,11 +25,11 @@ class DB:
         else:
             raise Exception('Connection to database not established')
 
-    def get_table_row_count(self, table):
+    def get_table_row_count(self, table, query=''):
         with self.cursor() as cur:
             try:
                 cur.execute(
-                    """ SELECT COUNT(*) FROM %s """ % table
+                    """ SELECT COUNT(*) FROM %s %s""" % (table,query)
                 )
                 return cur.fetchone().get('count')
             except Exception as e:

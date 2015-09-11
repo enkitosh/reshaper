@@ -13,7 +13,7 @@ class MovieTransformer(Transformer):
     title = TransformerField('title')
     author_id = RelationTransformerField(
         'author_id',
-        AuthorTransformer,
+        transformer=AuthorTransformer,
         relation_table='movie_author'
     )
 
@@ -26,12 +26,12 @@ class ActorTransformer(Transformer):
     name = TransformerField('movie')
     movie_id = RelationTransformerField(
         'movie_id',
-        MovieTransformer,
+        transformer=MovieTransformer,
         relation_table='movie_actor'
     )
     author_id = RelationTransformerField(
         'author_id',
-        AuthorTransformer,
+        transformer=AuthorTransformer,
         relation_table='actor_author'
     )
 
@@ -52,7 +52,7 @@ class DirectorTransformer(Transformer):
     country_id = SubTransformerField(
         'country_id',
         transformer=CountryTransformer,
-        create=False
+        commit=False
     )
 
     class Meta:
