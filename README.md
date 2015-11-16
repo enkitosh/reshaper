@@ -241,7 +241,7 @@ migrating to our new database.
 Note that filters have a kind of piping effect, so if we would add
 
 	def after(value):
-		return '%s_1'
+		return '%s_1' % value
 
 	filters = [comrade, after] -> 'comrade_Bobby_1'
 
