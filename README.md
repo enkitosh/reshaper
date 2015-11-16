@@ -1,6 +1,8 @@
 reshaper 
 ===============================
 
-[ ![Codeship Status for dv_dev/reshaper](https://codeship.com/projects/f1369680-df30-0132-9ebc-767a4e17443c/status?branch=master)](https://codeship.com/projects/80493) [![codecov.io](http://codecov.io/bitbucket/dv_dev/reshaper/coverage.svg?branch=master&token=MFw2iuSbb7)](http://codecov.io/bitbucket/dv_dev/reshaper?branch=master)
+[ ![Codeship Status for enkitosh/reshaper](https://codeship.com/projects/2e3b2e40-6e25-0133-e702-666194911eaf/status?branch=master)](https://codeship.com/projects/115794)
+
+[![codecov.io](https://codecov.io/github/enkitosh/reshaper/coverage.svg?branch=master&token=epJl7FaReu)](https://codecov.io/github/enkitosh/reshaper?branch=master)
 
 A tool to transfer data from one database to another.
