@@ -34,13 +34,22 @@ class Runner():
         if self.cache:
             if not query:
                 query = 'WHERE id >'
-            last_source_index = self.cache.get(
+            lsi = self.cache.get(
                 '%s_last_source_index' % transformer_name
             )
-            last_destination_index = self.cache.get(
+            if lsi:
+                lsi = lsi.decode('utf-8')
+            else:
+                lsi = '0'
+            ldi = self.cache.get(
                 '%s_last_destination_index' % transformer_name
             )
-            query = '%s %s' % (query, last_source_index)
+
+            if ldi:
+                ldi = ldi.decode('utf-8')
+            else:
+                ldi = '0'
+            query = '%s %s' % (query, lsi)
 
         source_table = transformer.source_table
         row_len = self.source_db.get_table_row_count(
@@ -76,3 +85,4 @@ class Runner():
                 last_destination_index
             )
         pbar.finish()
+        return count

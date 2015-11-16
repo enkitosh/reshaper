@@ -54,6 +54,7 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     install_requires=[
+        'redis==2.10.3',
         'python-dotenv==0.1.2',
         'psycopg2==2.6',
         'progressbar2==2.7.3'
