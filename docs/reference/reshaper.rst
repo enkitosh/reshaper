@@ -1,5 +1,0 @@
-reshaper
-=============================
-
-.. automodule:: reshaper
-    :members:
