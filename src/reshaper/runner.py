@@ -64,7 +64,7 @@ class Runner():
 
         cursor = self.source_db.cursor()
         cursor.execute(
-            """ SELECT * FROM %s %s""" % (source_table, query)
+            """ SELECT * FROM %s %s ORDER BY id ASC""" % (source_table, query)
         )
 
         for row in cursor:
