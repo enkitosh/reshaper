@@ -75,14 +75,14 @@ class Runner():
             count += 1
             pbar.update(count)
 
-        if self.cache:
-            self.cache.set(
-                '%s_last_source_index' % transformer_name,
-                last_source_index
-            )
-            self.cache.set(
-                '%s_last_destination_index' % transformer_name,
-                last_destination_index
-            )
+            if self.cache:
+                self.cache.set(
+                    '%s_last_source_index' % transformer_name,
+                    last_source_index
+                )
+                self.cache.set(
+                    '%s_last_destination_index' % transformer_name,
+                    last_destination_index
+                )
         pbar.finish()
         return count
