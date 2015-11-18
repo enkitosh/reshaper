@@ -87,10 +87,17 @@ class Manager:
             else:
                 data = self.insert(transformer)
 
-            self.add_relation(
-                field.relation_table,
-                {transformer.destination_id: data.get('id')}
-            )
+            if not transformer.commit:
+                self.add_relation(
+                    field.relation_table,
+                    data
+                )
+
+            else:
+                self.add_relation(
+                    field.relation_table,
+                    {transformer.destination_id: data.get('id')}
+                )
 
         # This function always returns 0
         # Relations are stored and resolved
@@ -102,7 +109,7 @@ class Manager:
         """
         Resolve SubTransformerField
         """
-        pk = 0
+        pk = value
 
         row = transformer.to_dict()
 
@@ -122,8 +129,7 @@ class Manager:
                 transformer, unique_value
             )
             pk = dest_row.get('id')
-        else:
-            pk = value
+
         return pk
 
     def insert(self, transformer):
@@ -138,7 +144,7 @@ class Manager:
         transformed = {}
         for key, value in transformer.to_dict().items():
             field = transformer.to_field(key)
-            if field:
+            if field and value:
                 if isinstance(field, RelationTransformerField):
                     pk = self.resolve_relationtransformerfield(
                         field,
