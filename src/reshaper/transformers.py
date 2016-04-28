@@ -1,6 +1,6 @@
-class Field:   
+class Field:
     def __init__(
-        self, 
+        self,
         source=None,
         commit=True,
         transformer=None,
@@ -23,7 +23,7 @@ class Field:
 
     def transform(self, transformer):
         return self.transformer()
-    
+
     def apply_filters(self, value, n=0):
         """
         Applies field filters to value.
@@ -41,7 +41,7 @@ class Field:
         else:
             n += 1
             return self.apply_filters(val, n)
-    
+
     def run_actions(self, value):
         """
         Runs actions on a field.
@@ -56,7 +56,7 @@ class Field:
 
 class TransformerField(Field):
     """
-    TransformerField is used to map a field 
+    TransformerField is used to map a field
     from source to destination.
     TransformerField does not really transform anything
     It simply carries the value from source database
@@ -66,12 +66,12 @@ class TransformerField(Field):
 
 class RelationTransformerField(Field):
     def __init__(
-        self, 
+        self,
         source,
         commit=True,
-        transformer=None, 
+        transformer=None,
         relation_table=None,
-        filters=[], 
+        filters=[],
         actions=[]
     ):
         """
@@ -81,7 +81,7 @@ class RelationTransformerField(Field):
         :param boolean commit: Indicates if the field being transformed should be inserted into destination db or only built
         :param Transformer transformer: Transformer object
         :param str relation_table: Name of destination table
-        :param list filters: A list of functions that alter the original value 
+        :param list filters: A list of functions that alter the original value
         :param list actions: A list of functions to run after transformation
         """
         super(RelationTransformerField, self).__init__(
@@ -94,15 +94,15 @@ class RelationTransformerField(Field):
         self.relation_table = relation_table
 
 class SubTransformerField(Field):
-        """
-        Field used to preserve foreign key relations
-        :param str source: Name of column as it appears in source_database
-        :param boolean commit: Indicates if the field being transformed should be inserted into destination db or only built
-        :param Transformer transformer: Transformer object
-        :param str key: The key (column) to look up
-        :param list filters: A list of functions that alter the original value 
-        :param list actions: A list of functions to run after transformation
-        """
+    """
+    Field used to preserve foreign key relations
+    :param str source: Name of column as it appears in source_database
+    :param boolean commit: Indicates if the field being transformed should be inserted into destination db or only built
+    :param Transformer transformer: Transformer object
+    :param str key: The key (column) to look up
+    :param list filters: A list of functions that alter the original value
+    :param list actions: A list of functions to run after transformation
+    """
     def __init__(
         self,
         source,
@@ -189,7 +189,7 @@ class Transformer(metaclass=TransformerMeta):
     """
     Transformer handles transforming original values
     to new values depending on what is declared within their
-    TransformerFields. 
+    TransformerFields.
     """
     def __init__(self, *args, **kwargs):
 
@@ -201,7 +201,7 @@ class Transformer(metaclass=TransformerMeta):
             )
             # Name of destination table in destination db
             self.destination_table = self._meta.get(
-                'destination_table', 
+                'destination_table',
                 None
             )
             # Name in destination db if the transformer itself is being added (in a relation table or in as a foreign key)
@@ -228,13 +228,13 @@ class Transformer(metaclass=TransformerMeta):
 
     def to_field(self, key):
         """
-        Given a key corresponding to attribute of transformer  
+        Given a key corresponding to attribute of transformer
         return its field
 
         :param str key: Key to lookup
         """
         return self._fields.get(key)
-            
+
     def set_values(self, data):
         """
         Sets values of transformer
