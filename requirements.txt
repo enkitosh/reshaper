@@ -3,3 +3,4 @@ coverage==3.7.1
 green==1.9.2
 codecov==1.1.8
 mockredispy==2.9.0.11
+python-dotenv==0.1.2

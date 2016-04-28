@@ -1,6 +1,14 @@
 import redis
+import os
 from progressbar import ProgressBar, Bar, Percentage, RotatingMarker, FileTransferSpeed, ETA, Counter
 from .manager import Manager
+from dotenv import load_dotenv
+
+try:
+    load_dotenv('.env')
+except Exception:
+    pass
+
 
 
 class Runner():
@@ -14,9 +22,9 @@ class Runner():
         self.cache = None
         if cache:
             self.cache = redis.StrictRedis(
-                host='localhost',
-                port=6379,
-                db=0
+                host=os.environ.get('REDIS_HOST'),
+                port=os.environ.get('REDIS_PORT'),
+                db=os.environ.get('REDIS_DB')
             )
         self.source_db = source_db
         self.destination_db = destination_db
