@@ -121,14 +121,16 @@ class Manager:
             transformer.set_values(row)
 
             if field.commit:
-                pk = self.insert(transformer).get('id')
+                pk = self.insert(transformer).get(field.key)
+            else:
+                pk = row.get(field.key)
 
         if transformer.unique:
             unique_value = row.get(transformer.unique)
             dest_row = self.resolve_unique(
                 transformer, unique_value
             )
-            pk = dest_row.get('id')
+            pk = dest_row.get(field.key)
 
         return pk
 

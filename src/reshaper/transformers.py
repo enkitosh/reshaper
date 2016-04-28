@@ -96,16 +96,31 @@ class RelationTransformerField(Field):
 class SubTransformerField(Field):
         """
         Field used to preserve foreign key relations
-        when an object relies on a foreign key being 
-        translated from source database to destination database.
-        SubTransformerField can take a transformer as argument.
-        If no transformer is passed the value of the source_db
-        is simply passed to the destination database.
-        That is, if no transformer is passed in foreign keys
-        are expected to be identical from source database
-        to destination database even if their table names vary.
+        :param str source: Name of column as it appears in source_database
+        :param boolean commit: Indicates if the field being transformed should be inserted into destination db or only built
+        :param Transformer transformer: Transformer object
+        :param str key: The key (column) to look up
+        :param list filters: A list of functions that alter the original value 
+        :param list actions: A list of functions to run after transformation
         """
-        pass
+    def __init__(
+        self,
+        source,
+        commit=True,
+        transformer=None,
+        key='id',
+        filters=[],
+        actions=[]
+    ):
+        super(SubTransformerField, self).__init__(
+            source,
+            commit=commit,
+            transformer=transformer,
+            filters=filters,
+            actions=actions
+        )
+        self.key = key
+
 
 class ValueField(Field):
     """
