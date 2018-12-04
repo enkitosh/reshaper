@@ -7,6 +7,8 @@ from test.test_data.sql import DBWrapper
 from test.test_data.transformers import *
 
 class TestCache(unittest.TestCase):
+    pass
+    """
 
     def setUp(self):
         self.db = DBWrapper()
@@ -26,7 +28,6 @@ class TestCache(unittest.TestCase):
 
 
     def test_running_with_cache(self):
-        """
         self.runner.cache = MockRedis()
         pk_author = self.runner.source_db.insert_single(
             'author', {'name':'Stephen King', 'age': '67'}

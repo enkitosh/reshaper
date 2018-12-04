@@ -3,9 +3,9 @@ reshaper
 
 ![Reshaper](https://31.media.tumblr.com/c8d469a7edb6e368c939650cca52780e/tumblr_nnrxu0RIzc1ron07wo1_500.gif)
 
-[ ![Codeship Status for enkitosh/reshaper](https://codeship.com/projects/2e3b2e40-6e25-0133-e702-666194911eaf/status?branch=master)](https://codeship.com/projects/115794)
+[ ![Codeship Status for naglalakk/reshaper](https://app.codeship.com/projects/cf7abaf0-da3a-0136-acc9-02f2182c4567/status?branch=master)](https://app.codeship.com/projects/317524)
 
-[![codecov.io](https://codecov.io/github/enkitosh/reshaper/coverage.svg?branch=master&token=epJl7FaReu)](https://codecov.io/github/enkitosh/reshaper?branch=master)
+[![codecov](https://codecov.io/gh/naglalakk/reshaper/branch/master/graph/badge.svg)](https://codecov.io/gh/naglalakk/reshaper)
 
 ## Installation
 
