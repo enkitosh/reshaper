@@ -163,7 +163,7 @@ class Manager:
                     pk = self.resolve_subtransformerfield(
                         field,
                         value,
-                        field.transform(field.transformer())
+                        field.transform(transformer)
                     )
                     transformed[key] = pk
                 elif isinstance(field, TransformerField):
