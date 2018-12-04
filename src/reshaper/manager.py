@@ -165,6 +165,7 @@ class Manager:
                         value,
                         field.transform(transformer)
                     )
+                    val = field.postFilter(pk) if field.postFilter else pk
                     transformed[key] = pk
                 elif isinstance(field, TransformerField):
                     transformer = field.transform(transformer)

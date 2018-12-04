@@ -110,7 +110,8 @@ class SubTransformerField(Field):
         transformer=None,
         key='id',
         filters=[],
-        actions=[]
+        actions=[],
+        postFilter=None
     ):
         super(SubTransformerField, self).__init__(
             source,
@@ -120,7 +121,7 @@ class SubTransformerField(Field):
             actions=actions
         )
         self.key = key
-
+        self.postFilter = postFilter
 
 class ValueField(Field):
     """
