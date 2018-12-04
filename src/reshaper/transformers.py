@@ -22,7 +22,7 @@ class Field:
         self.commit = commit
 
     def transform(self, transformer):
-        return self.transformer()
+        return transformer
 
     def apply_filters(self, value, n=0):
         """

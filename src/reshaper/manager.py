@@ -85,6 +85,7 @@ class Manager:
                         'No unique declared for transformer: %s' % transformer.__class__.__name__
                     )
             else:
+                print(transformer.__dict__)
                 data = self.insert(transformer)
 
             if not transformer.commit:
@@ -110,8 +111,16 @@ class Manager:
         Resolve SubTransformerField
         """
         pk = value
-
         row = transformer.to_dict()
+
+
+        if transformer.unique:
+            unique_value = row.get(transformer.unique)
+            dest_row = self.resolve_unique(
+                transformer, unique_value
+            )
+            if dest_row:
+                return dest_row.get(field.key)
 
         if transformer.source_table:
             row = self.source_db.get_row_from_pk(
@@ -125,12 +134,6 @@ class Manager:
             else:
                 pk = row.get(field.key)
 
-        if transformer.unique:
-            unique_value = row.get(transformer.unique)
-            dest_row = self.resolve_unique(
-                transformer, unique_value
-            )
-            pk = dest_row.get(field.key)
 
         return pk
 
@@ -146,23 +149,27 @@ class Manager:
         transformed = {}
         for key, value in transformer.to_dict().items():
             field = transformer.to_field(key)
-            if field and value:
+            if field != None and value != None:
                 if isinstance(field, RelationTransformerField):
+                    print("Is Relation Transformer")
+                    print(field.transform(transformer).__dict__)
                     pk = self.resolve_relationtransformerfield(
                         field,
                         value,
-                        field.transform(transformer)
+                        field.transform(field.transformer())
                     )
                 elif isinstance(field, SubTransformerField):
                     pk = self.resolve_subtransformerfield(
                         field,
                         value,
-                        field.transform(transformer)
+                        field.transform(field.transformer())
                     )
                     transformed[key] = pk
                 elif isinstance(field, TransformerField):
+                    transformer = field.transform(transformer)
+                    val = transformer.to_dict().get(key)
                     if field.commit:
-                        transformed[key] = value if value else ""
+                        transformed[key] = val if val != None else ""
                 elif isinstance(field, ValueField):
                     transformed[key] = field.value
         if transformer.commit:
@@ -182,6 +189,14 @@ class Manager:
         :param dict row: Dictionary containing row values from source database
         """
         transformer.set_values(row)
+
+        if transformer.unique and transformer.method == 'get_or_create':
+            unique_value = transformer.to_dict().get(transformer.unique)
+            dest_row = self.resolve_unique(
+                transformer, unique_value
+            )
+            if dest_row:
+                return dest_row.get('id')
         pk = self.insert(transformer).get('id')
 
         if self.cache:

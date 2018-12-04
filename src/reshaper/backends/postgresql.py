@@ -100,10 +100,10 @@ class DB:
         stub_a = '('
         stub_b = '('
         for key, value in values.items():
-            if value:
+            if value != None:
                 if isinstance(value, str):
                     if "'" in value:
-                        value = value.replace("'", "´")
+                        value = value.replace("'", "''")
                 else:
                     value = str(value)
                 stub_a += key + ','

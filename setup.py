@@ -24,13 +24,13 @@ def read(*names, **kwargs):
 
 setup(
     name='reshaper',
-    version='0.1.0',
+    version='0.1.1',
     license='BSD',
     description='A tool for converting database schemas while preserving data',
     long_description='',
     author='Thordur Hermannsson',
     author_email='thordurguhe@gmail.com',
-    url='https://bitbucket.org/dv_dev/reshaper',
+    url='https://github.com/naglalakk/reshaper',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -48,6 +48,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6'
         'Topic :: Utilities',
     ],
     keywords=[
@@ -56,7 +58,7 @@ setup(
     install_requires=[
         'redis==2.10.3',
         'python-dotenv==0.1.2',
-        'psycopg2==2.6',
+        'psycopg2==2.7.4',
         'progressbar2==2.7.3'
     ],
     extras_require={

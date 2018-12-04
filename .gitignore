@@ -58,3 +58,5 @@ docs/_build
 *.bak
 
 .env
+
+.pytest_cache
