@@ -85,7 +85,6 @@ class Manager:
                         'No unique declared for transformer: %s' % transformer.__class__.__name__
                     )
             else:
-                print(transformer.__dict__)
                 data = self.insert(transformer)
 
             if not transformer.commit:
@@ -155,8 +154,6 @@ class Manager:
             field = transformer.to_field(key)
             if field != None and value != None:
                 if isinstance(field, RelationTransformerField):
-                    print("Is Relation Transformer")
-                    print(field.transform(transformer).__dict__)
                     pk = self.resolve_relationtransformerfield(
                         field,
                         value,
