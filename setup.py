@@ -24,7 +24,7 @@ def read(*names, **kwargs):
 
 setup(
     name='reshaper',
-    version='0.1.4',
+    version='0.1.5',
     license='BSD',
     description='A tool for converting database schemas while preserving data',
     long_description='',
