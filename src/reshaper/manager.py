@@ -114,10 +114,14 @@ class Manager:
         row = transformer.to_dict()
 
 
-        if transformer.unique:
-            unique_value = row.get(transformer.unique)
+        if field.transformer().unique:
+            row = self.source_db.get_row_from_pk(
+                field.transformer().source_table,
+                value
+            )
+            unique_value = row.get(field.transformer().unique)
             dest_row = self.resolve_unique(
-                transformer, unique_value
+                field.transformer(), unique_value
             )
             if dest_row:
                 return dest_row.get(field.key)
